@@ -1,0 +1,19 @@
+{
+  "name": "rmv",
+  "version": "1.0.0",
+  "description": "Regexp-powered file renamer, mv with some extra tricks",
+  "main": "index.js",
+  "repository": "tivac/rmv",
+  "scripts": {
+    "start": "node ./cli.js"
+  },
+  "bin": "./cli.js",
+  "keywords": ["regexp", "rename", "cli"],
+  "author": "Pat Cavit <npm@patcavit.com>",
+  "license": "MIT",
+  "dependencies": {
+    "meow": "^3.7.0",
+    "shelljs": "^0.7.4",
+    "string-to-regexp": "^0.1.0"
+  }
+}
