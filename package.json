@@ -1,6 +1,6 @@
 {
   "name": "mvr",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "Regexp-powered file renamer, mv with some extra tricks",
   "main": "index.js",
   "repository": "tivac/mvr",
@@ -8,7 +8,11 @@
     "start": "node ./cli.js"
   },
   "bin": "./cli.js",
-  "keywords": ["regexp", "rename", "cli"],
+  "keywords": [
+    "regexp",
+    "rename",
+    "cli"
+  ],
   "author": "Pat Cavit <npm@patcavit.com>",
   "license": "MIT",
   "dependencies": {
