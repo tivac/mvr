@@ -1,9 +1,9 @@
 {
-  "name": "rmv",
-  "version": "1.0.0",
+  "name": "mvr",
+  "version": "1.0.1",
   "description": "Regexp-powered file renamer, mv with some extra tricks",
   "main": "index.js",
-  "repository": "tivac/rmv",
+  "repository": "tivac/mvr",
   "scripts": {
     "start": "node ./cli.js"
   },
