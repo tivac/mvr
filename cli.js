@@ -3,10 +3,12 @@
 "use strict";
 
 var path = require("path"),
-
+    
+    date  = require("dateformat"),
+    exif  = require("jpeg-exif"),
     meow  = require("meow"),
-    shell = require("shelljs"),
     parse = require("string-to-regexp"),
+    shell = require("shelljs"),
 
     cli = meow(`
         Usage
@@ -14,12 +16,14 @@ var path = require("path"),
 
         Options
         --dry,     -d    Don't rename files
+        --exif,    -e    Attempt to parse EXIF data from matching files
         --recurse, -r    Recursively search for files
     `, {
-        boolean : [ "dry", "recurse", "d", "r" ],
+        boolean : [ "dry", "exif", "recurse", "d", "e", "r" ],
         string  : [ "_" ],
         alias   : {
             d : "dry",
+            e : "exif",
             h : "help",
             r : "recurse"
         }
@@ -28,6 +32,7 @@ var path = require("path"),
     search  = parse(cli.input[0]),
     replace = cli.input[1],
     filer   = /\$file/g,
+    dater   = /\{\{datetime (.+?)\}\}/,
     
     files;
 
@@ -49,15 +54,28 @@ if(!files.length) {
 }
 
 files.forEach((f) => {
-    var dest = f.replace(search, replace.replace(filer, f));
+    var dest, time;
     
-    console.log(`Moving ${f} to ${dest}`);
-    
-    if(cli.flags.dry) {
-        return;
+    if(cli.flags.exif) {
+        try {
+            time = exif.parseSync(f).DateTime.split(" ");
+            time = time.map((t) => t.split(":"));
+            time = new Date(time[0][0], parseInt(time[0][1]) - 1, time[0][2]);
+        } catch(e) {
+            console.log(`Invalid EXIF data in ${f}`);
+
+            time = false;
+        }
     }
     
-    shell.mkdir("-p", path.dirname(dest));
+    dest = replace.replace(filer, f).replace(dater, (match, fmt) => date(time, fmt));
+    dest = f.replace(search, dest);
     
-    shell.mv(f, dest);
+    console.log(`Moving ${f} to ${dest}`);
+     
+    if(!cli.flags.dry) {
+        shell.mkdir("-p", path.dirname(dest));
+        
+        shell.mv(f, dest);
+    }
 });
