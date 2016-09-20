@@ -8,13 +8,19 @@ var path = require("path"),
     shell = require("shelljs"),
     parse = require("string-to-regexp"),
 
+    pkg = require("./package.json"),
+
     cli = meow(`
         Usage
-        $ rmv <options> find replace
+          $ ${pkg.name} <options> <find-regex> <replace-pattern>
 
         Options
-        --dry,     -d    Don't rename files
-        --recurse, -r    Recursively search for files
+          --dry,     -d    Don't rename files
+          --recurse, -r    Recursively search for files
+
+        Examples
+          ${pkg.name} --dry ".*\.js" "js-$file"
+          ${pkg.name} "wp_(\d{4})(\d{2})(\d{2}).*" "$1-$2-$3/$file"
     `, {
         boolean : [ "dry", "recurse", "d", "r" ],
         string  : [ "_" ],
