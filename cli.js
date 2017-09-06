@@ -2,38 +2,47 @@
 /* eslint no-console:"off" */
 "use strict";
 
-var path = require("path"),
-
+var fs   = require("fs"),
+    path = require("path"),
+    
+    date  = require("dateformat"),
+    exif  = require("jpeg-exif"),
     meow  = require("meow"),
-    shell = require("shelljs"),
     parse = require("string-to-regexp"),
+    shell = require("shelljs"),
 
     pkg = require("./package.json"),
 
     cli = meow(`
         Usage
-          $ ${pkg.name} <options> <find-regex> <replace-pattern>
+        $ mvr <options> find replace
+        
+        Examples
+        $ mvr "(\d\d\d)\.jpg" "file$1.jpg"
+        $ mvr -e ".*" "{{datetime yyyy-mm-dd}}/$file"
+        $ mvr --attr=c ".*" "{{datetime yyyy-mm-dd}}/$file"
 
         Options
-          --dry,     -d    Don't rename files
-          --recurse, -r    Recursively search for files
-
-        Examples
-          ${pkg.name} --dry ".*\.js" "js-$file"
-          ${pkg.name} "wp_(\d{4})(\d{2})(\d{2}).*" "$1-$2-$3/$file"
+        --dry,     -d    Don't rename files
+        --exif,    -e    Attempt to parse EXIF data for use with {{datetime <format>}}
+        --attr,    -a    Select an attribute for use with {{datetime <format>}}: (c)reated, (m)odified, or (a)ccessed
+        --recurse, -r    Recursively search for files
     `, {
-        boolean : [ "dry", "recurse", "d", "r" ],
+        boolean : [ "dry", "exif", "recurse" ],
         string  : [ "_" ],
         alias   : {
             d : "dry",
+            e : "exif",
             h : "help",
-            r : "recurse"
+            r : "recurse",
+            a : "attr"
         }
     }),
     
     search  = parse(cli.input[0]),
     replace = cli.input[1],
     filer   = /\$file/g,
+    dater   = /\{\{datetime (.+?)\}\}/,
     
     files;
 
@@ -44,26 +53,49 @@ if(!cli.input.length || cli.input.length < 2 || !search || !replace) {
 }
 
 if(cli.flags.dry) {
-    console.log("DRY RUN - no files will be moved");
+    console.warn("DRY RUN - no files will be moved");
 }
 
 files = (cli.flags.recurse ? shell.find(".") : shell.ls("-A", "."))
     .filter((f) => (f.search(search) > -1));
 
 if(!files.length) {
-    return console.log("No files matched!");
+    return console.error("No files matched!");
+}
+
+if(cli.flags.attr && [ "a", "c", "m" ].indexOf(cli.flags.attr.toLowerCase()) === -1) {
+    return console.error("Unknown argument for --attr");
 }
 
 files.forEach((f) => {
-    var dest = f.replace(search, replace.replace(filer, f));
+    var dest, time, stat;
     
-    console.log(`Moving ${f} to ${dest}`);
-    
-    if(cli.flags.dry) {
-        return;
+    if(cli.flags.exif) {
+        try {
+            time = exif.parseSync(f).DateTime.split(" ");
+            time = time.map((t) => t.split(":"));
+            time = new Date(time[0][0], parseInt(time[0][1]) - 1, time[0][2]);
+        } catch(e) {
+            console.log(`Invalid EXIF data in ${f}`);
+
+            return;
+        }
+    }
+
+    if(cli.flags.attr) {
+        stat = fs.lstatSync(f);
+
+        time = stat[`${cli.flags.attr.toLowerCase()}time`];
     }
     
-    shell.mkdir("-p", path.dirname(dest));
+    dest = replace.replace(filer, f).replace(dater, (match, fmt) => date(time, fmt));
+    dest = f.replace(search, dest);
     
-    shell.mv(f, dest);
+    console.log(`Moving ${f} to ${dest}`);
+     
+    if(!cli.flags.dry) {
+        shell.mkdir("-p", path.dirname(dest));
+        
+        shell.mv(f, dest);
+    }
 });
