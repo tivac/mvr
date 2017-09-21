@@ -16,7 +16,7 @@
   "author": "Pat Cavit <npm@patcavit.com>",
   "license": "MIT",
   "dependencies": {
-    "dateformat": "^1.0.12",
+    "dateformat": "^3.0.2",
     "jpeg-exif": "^1.0.6",
     "meow": "^3.7.0",
     "shelljs": "^0.7.8",
